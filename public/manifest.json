@@ -1,0 +1,17 @@
+{
+  "name": "Sabor Ruiz Recetario",
+  "short_name": "Sabor Ruiz",
+  "description": "Una aplicación de recetario PWA moderna con soporte offline, sincronización y diseño mobile-first.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

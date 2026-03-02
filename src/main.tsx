@@ -3,13 +3,17 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Register Service Worker via vite-plugin-pwa
-// No manual code needed if using 'autoUpdate' or 'prompt' with injectRegister: 'auto'
-// But if we want to ensure it registers immediately:
-import { registerSW } from 'virtual:pwa-register';
-
+// Registro manual del Service Worker para PWA
 if ('serviceWorker' in navigator) {
-  registerSW({ immediate: true });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registrado correctamente:', registration.scope);
+      })
+      .catch((error) => {
+        console.log('Fallo al registrar SW:', error);
+      });
+  });
 }
 
 createRoot(document.getElementById('root')!).render(
