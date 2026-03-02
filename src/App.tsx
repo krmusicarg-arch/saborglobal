@@ -37,7 +37,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [showIosInstallModal, setShowIosInstallModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   useEffect(() => {
     // Detect iOS
@@ -61,24 +61,17 @@ export default function App() {
   }, []);
 
   const handleInstallClick = () => {
-    if (isIos) {
-      setShowIosInstallModal(true);
+    // If we have a prompt (Android/Desktop PWA), use it
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.then((choiceResult: any) => {
+        setInstallPrompt(null);
+      });
       return;
     }
 
-  const handleInstallClick = () => {
-    if (!installPrompt) return;
-    // Show the install prompt
-    installPrompt.prompt();
-    // Wait for the user to respond to the prompt
-    installPrompt.userChoice.then((choiceResult: any) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      setInstallPrompt(null);
-    });
+    // Otherwise show instructions (iOS or Manual Android)
+    setShowInstallModal(true);
   };
 
   const loadRecipes = async () => {
@@ -138,8 +131,7 @@ export default function App() {
   };
 
   const handleDelete = async (id: number) => {
-    await rec/* Show install button if installable (Android/Desktop) OR if iOS and not installed */}
-            {(installPrompt || (isIos && !isStandalone))lete(id);
+    await recipeService.delete(id);
     await loadRecipes();
   };
 
@@ -155,7 +147,7 @@ export default function App() {
             <h1 className="text-xl font-bold tracking-tight">Sabores Ruiz</h1>
           </div>
           <div className="flex items-center gap-2">
-            {installPrompt && (
+            {!isStandalone && (
               <button
                 onClick={handleInstallClick}
                 className="p-2 rounded-full hover:bg-stone-100 transition-colors md:hidden text-emerald-600"
@@ -299,44 +291,7 @@ export default function App() {
               <ChefHat size={48} />
             </div>
             <p className="text-stone-500 font-medium">No se encontraron recetas. ¡Crea la primera!</p>
-         showIosInstallModal && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowIosInstallModal(false)}
-              className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="relative w-full max-w-sm mx-auto bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden p-6 pb-12 sm:pb-6"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-stone-800">Instalar en iPhone</h3>
-                <button onClick={() => setShowIosInstallModal(false)} className="p-2 hover:bg-stone-100 rounded-full">
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="space-y-4 text-stone-600">
-                <p>Para instalar esta aplicación en tu dispositivo iOS:</p>
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">1</span>
-                  <span>Toca el botón <span className="font-semibold">Compartir</span> <Share className="inline w-4 h-4 ml-1" /></span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">2</span>
-                  <span>Desliza y selecciona <span className="font-semibold">Agregar a Inicio</span> <Plus className="inline w-4 h-4 border border-stone-800 rounded-[3px] ml-1 p-[1px]" /></span>
-                </div>
-              </div>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-stone-200 rounded-full sm:hidden"></div>
-            </motion.div>
           </div>
-        )}
-
-        { </div>
         )}
       </main>
 
@@ -350,6 +305,64 @@ export default function App() {
       >
         <Plus size={28} />
       </button>
+
+      {/* Install Modal */}
+      <AnimatePresence>
+        {showInstallModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowInstallModal(false)}
+              className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="relative w-full max-w-sm mx-auto bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden p-6 pb-12 sm:pb-6"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-stone-800">
+                  {isIos ? 'Instalar en iPhone' : 'Instalar Aplicación'}
+                </h3>
+                <button onClick={() => setShowInstallModal(false)} className="p-2 hover:bg-stone-100 rounded-full">
+                  <X size={24} />
+                </button>
+              </div>
+              
+              {isIos ? (
+                <div className="space-y-4 text-stone-600">
+                  <p>Para instalar esta aplicación en tu dispositivo iOS:</p>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">1</span>
+                    <span>Toca el botón <span className="font-semibold">Compartir</span> <Share className="inline w-4 h-4 ml-1" /></span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">2</span>
+                    <span>Desliza y selecciona <span className="font-semibold">Agregar a Inicio</span> <Plus className="inline w-4 h-4 border border-stone-800 rounded-[3px] ml-1 p-[1px]" /></span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 text-stone-600">
+                  <p>Para instalar esta aplicación en Android:</p>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">1</span>
+                    <span>Toca el botón de menú (tres puntos) en tu navegador.</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">2</span>
+                    <span>Selecciona <span className="font-semibold">Instalar aplicación</span> o <span className="font-semibold">Agregar a la pantalla principal</span>.</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-stone-200 rounded-full sm:hidden"></div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modal */}
       <AnimatePresence>

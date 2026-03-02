@@ -1,5 +1,6 @@
 {
-  "name": "SaborGlobal Recetario",
+  "name": "Sabor Ruiz Recetario",
+  "short_name": "Sabor Ruiz",
   "description": "Una aplicación de recetario PWA moderna con soporte offline, sincronización y diseño mobile-first.",
   "requestFramePermissions": []
 }
