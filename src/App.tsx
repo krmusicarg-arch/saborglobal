@@ -15,7 +15,9 @@ import {
   RefreshCw,
   ChefHat,
   Download,
-  Share
+  Share,
+  MessageCircle,
+  Send
 } from 'lucide-react';
 import { db, Recipe } from './db/localDb';
 import { recipeService } from './recipeService';
@@ -39,6 +41,13 @@ export default function App() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  // Chatbot State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; sender: 'user' | 'chef'; text: string }>>([
+    { id: 'welcome', sender: 'chef', text: '¡Hola! Soy tu chef asistente. ¿Qué te gustaría cocinar hoy?' }
+  ]);
 
   useEffect(() => {
     // Detect iOS
@@ -102,9 +111,12 @@ export default function App() {
     return recipes
       .filter(r => {
         const matchesOrigin = filterOrigin ? r.origin === filterOrigin : true;
-        const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             r.observations.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                             (r.content || '').toLowerCase().includes(searchQuery.toLowerCase());
+        const searchTerms = searchQuery.toLowerCase().split(' ').filter(t => t.length > 0);
+        const matchesSearch = searchTerms.every(term => 
+          r.title.toLowerCase().includes(term) || 
+          r.observations.toLowerCase().includes(term) ||
+          (r.content || '').toLowerCase().includes(term)
+        );
         return matchesOrigin && matchesSearch;
       })
       .sort((a, b) => {
@@ -142,6 +154,61 @@ export default function App() {
   const handleDelete = async (id: number) => {
     await recipeService.delete(id);
     await loadRecipes();
+  };
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userText = chatInput.trim();
+    setChatMessages(prev => [...prev, { id: Date.now().toString(), sender: 'user', text: userText }]);
+    
+    // Analyze intent and extract keywords (simple NLP)
+    const STOP_WORDS = new Set([
+      'quiero', 'cocinar', 'preparar', 'hacer', 'una', 'un', 'el', 'la', 'los', 'las', 
+      'con', 'de', 'para', 'y', 'o', 'en', 'receta', 'plato', 'comida', 'algo', 'que', 
+      'me', 'te', 'le', 'se', 'mi', 'tu', 'su', 'nos', 'os', 'sus', 'mis', 'tengo', 
+      'tienes', 'gustaria', 'quisiera', 'necesito', 'busco', 'buscar', 'encontrar', 
+      'ver', 'dame', 'muestrame', 'ensename', 'como', 'lleve', 'tenga', 'use', 'usar'
+    ]);
+
+    const keywords = userText.toLowerCase()
+      .replace(/[^\w\s\u00C0-\u00FF]/g, '') // Remove punctuation but keep accented chars
+      .split(/\s+/)
+      .filter(word => !STOP_WORDS.has(word) && word.length > 2);
+    
+    const searchText = keywords.join(' ');
+    console.log('Chat analysis:', { original: userText, keywords, searchText });
+
+    setSearchQuery(searchText);
+    setFilterOrigin(''); // Reset origin filter for global search
+    setChatInput('');
+
+    // Simulate chef response
+    setTimeout(() => {
+      // Logic mirrors filteredRecipes logic but locally to generate response count
+      const matchCount = recipes.filter(r => {
+        const searchTerms = keywords;
+        if (searchTerms.length === 0) return false;
+        
+        return searchTerms.every(term => 
+                   r.title.toLowerCase().includes(term) || 
+                   r.observations.toLowerCase().includes(term) ||
+                   (r.content || '').toLowerCase().includes(term)
+                 );
+      }).length;
+
+      let response;
+      if (keywords.length === 0) {
+        response = `¡Hola! Soy tu chef. Dime qué ingrediente tienes o qué te gustaría comer (ej: "pollo", "algo con arroz") y buscaré por ti.`;
+      } else if (matchCount > 0) {
+        response = `¡Entendido! Busqué recetas con ${keywords.map(k => `"${k}"`).join(' y ')}. Encontré ${matchCount} opción${matchCount !== 1 ? 'es' : ''}. ¡Aquí las tienes!`;
+      } else {
+        response = `Mmm... revisé mis libros y no encontré recetas que usen ${keywords.map(k => `"${k}"`).join(' ni ')}. ¿Quizás podamos intentar con otro ingrediente o agregar esa receta nueva?`;
+      }
+
+      setChatMessages(prev => [...prev, { id: Date.now().toString() + 'chef', sender: 'chef', text: response }]);
+    }, 600);
   };
 
   return (
@@ -314,6 +381,68 @@ export default function App() {
       >
         <Plus size={28} />
       </button>
+
+      {/* Chatbot FAB */}
+      <button 
+        onClick={() => setIsChatOpen(prev => !prev)}
+        className="fixed bottom-6 left-6 w-14 h-14 bg-stone-800 text-white rounded-2xl shadow-lg shadow-stone-400 flex items-center justify-center hover:bg-stone-900 hover:scale-105 active:scale-95 transition-all z-40"
+      >
+        {isChatOpen ? <X size={28} /> : <MessageCircle size={28} />}
+      </button>
+
+      {/* Chatbot Window */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-24 left-6 z-50 w-80 h-96 bg-white rounded-3xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden"
+          >
+            <div className="bg-stone-800 p-4 flex items-center gap-3">
+              <div className="bg-emerald-500 p-1.5 rounded-full">
+                <ChefHat className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm">Chef Asistente</h3>
+                <p className="text-stone-400 text-xs">¡Pregúntame!</p>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-stone-50">
+              {chatMessages.map((msg) => (
+                <div 
+                  key={msg.id} 
+                  className={cn(
+                    "max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed",
+                    msg.sender === 'user' 
+                      ? "ml-auto bg-emerald-600 text-white rounded-tr-none" 
+                      : "bg-white text-stone-800 border border-stone-200 rounded-tl-none shadow-sm"
+                  )}
+                >
+                  {msg.text}
+                </div>
+              ))}
+            </div>
+
+            <form onSubmit={handleChatSubmit} className="p-3 bg-white border-t border-stone-100 flex gap-2">
+              <input 
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Escribe un ingrediente..."
+                className="flex-1 px-4 py-2 bg-stone-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-stone-400"
+              />
+              <button 
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="p-2 bg-stone-800 text-white rounded-xl hover:bg-stone-900 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                <Send size={18} />
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Install Modal */}
       <AnimatePresence>
