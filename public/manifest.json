@@ -1,0 +1,22 @@
+{
+  "short_name": "SaborGlobal",
+  "name": "SaborGlobal Recetario",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/recipe/192/192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://picsum.photos/seed/recipe/512/512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#10b981",
+  "description": "Tu recetario personal con sabor global."
+}

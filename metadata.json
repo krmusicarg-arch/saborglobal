@@ -1,0 +1,5 @@
+{
+  "name": "SaborGlobal Recetario",
+  "description": "Una aplicación de recetario PWA moderna con soporte offline, sincronización y diseño mobile-first.",
+  "requestFramePermissions": []
+}
