@@ -13,7 +13,8 @@ import {
   X,
   Save,
   RefreshCw,
-  ChefHat
+  ChefHat,
+  Download
 } from 'lucide-react';
 import { db, Recipe } from './db/localDb';
 import { recipeService } from './recipeService';
@@ -33,6 +34,35 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'rating' | 'title'>('rating');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (!installPrompt) return;
+    // Show the install prompt
+    installPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    installPrompt.userChoice.then((choiceResult: any) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      setInstallPrompt(null);
+    });
+  };
 
   const loadRecipes = async () => {
     const data = await recipeService.getAll();
@@ -106,16 +136,27 @@ export default function App() {
             </div>
             <h1 className="text-xl font-bold tracking-tight">Sabores Ruiz</h1>
           </div>
-          <button 
-            onClick={handleSync}
-            disabled={isSyncing}
-            className={cn(
-              "p-2 rounded-full hover:bg-stone-100 transition-colors",
-              isSyncing && "animate-spin"
+          <div className="flex items-center gap-2">
+            {installPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="p-2 rounded-full hover:bg-stone-100 transition-colors md:hidden text-emerald-600"
+                title="Instalar aplicación"
+              >
+                <Download size={20} />
+              </button>
             )}
-          >
-            <RefreshCw size={20} className="text-stone-500" />
-          </button>
+            <button 
+              onClick={handleSync}
+              disabled={isSyncing}
+              className={cn(
+                "p-2 rounded-full hover:bg-stone-100 transition-colors",
+                isSyncing && "animate-spin"
+              )}
+            >
+              <RefreshCw size={20} className="text-stone-500" />
+            </button>
+          </div>
         </div>
       </header>
 
