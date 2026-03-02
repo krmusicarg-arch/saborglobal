@@ -104,7 +104,7 @@ export default function App() {
             <div className="bg-emerald-500 p-2 rounded-xl text-white">
               <ChefHat size={24} />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">SaborGlobal</h1>
+            <h1 className="text-xl font-bold tracking-tight">Sabores Ruiz</h1>
           </div>
           <button 
             onClick={handleSync}
