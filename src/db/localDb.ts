@@ -8,6 +8,7 @@ export interface Recipe {
   link: string;
   rating: number;
   observations: string;
+  content?: string;
   updatedAt: number;
   synced: number; // 0 for false, 1 for true
   deleted?: number; // 0 for false, 1 for true

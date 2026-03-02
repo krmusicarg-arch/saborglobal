@@ -103,7 +103,8 @@ export default function App() {
       .filter(r => {
         const matchesOrigin = filterOrigin ? r.origin === filterOrigin : true;
         const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             r.observations.toLowerCase().includes(searchQuery.toLowerCase());
+                             r.observations.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             (r.content || '').toLowerCase().includes(searchQuery.toLowerCase());
         return matchesOrigin && matchesSearch;
       })
       .sort((a, b) => {
@@ -128,10 +129,11 @@ export default function App() {
       link: formData.get('link') as string,
       rating: Number(formData.get('rating')),
       observations: formData.get('observations') as string,
+      content: formData.get('content') as string,
       id: editingRecipe?.id
     };
 
-    await recipeService.save(recipeData);
+    await recipeService.save(recipeData as Recipe);
     await loadRecipes();
     setIsModalOpen(false);
     setEditingRecipe(null);
@@ -441,6 +443,17 @@ export default function App() {
                       defaultValue={editingRecipe?.link}
                       placeholder="https://ejemplo.com/receta"
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-stone-600 ml-1">Receta</label>
+                    <textarea 
+                      name="content" 
+                      rows={5}
+                      defaultValue={editingRecipe?.content}
+                      placeholder="Ingredientes y pasos de preparación..."
+                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
                     />
                   </div>
 

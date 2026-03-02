@@ -35,6 +35,7 @@ export async function syncRecipes() {
           link: local.link,
           rating: local.rating,
           observations: local.observations,
+          content: local.content || '',
           updatedAt: serverTimestamp(), // Usar tiempo del servidor de Firebase
         };
         
@@ -66,6 +67,7 @@ export async function syncRecipes() {
               link: server.link,
               rating: server.rating,
               observations: server.observations,
+              content: server.content || '',
               updatedAt: serverUpdatedAt,
               remoteId: server.id,
               synced: 1,
@@ -79,6 +81,7 @@ export async function syncRecipes() {
             link: server.link,
             rating: server.rating,
             observations: server.observations,
+            content: server.content || '',
             updatedAt: serverUpdatedAt,
             remoteId: server.id,
             synced: 1,
