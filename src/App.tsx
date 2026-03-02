@@ -60,13 +60,19 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleInstallClick = () => {
+  const handleInstallClick = async () => {
     // If we have a prompt (Android/Desktop PWA), use it
     if (installPrompt) {
-      installPrompt.prompt();
-      installPrompt.userChoice.then((choiceResult: any) => {
+      try {
+        await installPrompt.prompt();
+        const choiceResult = await installPrompt.userChoice;
+        console.log('User choice:', choiceResult.outcome);
         setInstallPrompt(null);
-      });
+      } catch (err) {
+        console.error('Install prompt failed:', err);
+        // Fallback to manual instructions if prompt fails
+        setShowInstallModal(true);
+      }
       return;
     }
 
