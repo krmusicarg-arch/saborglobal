@@ -3,13 +3,13 @@
   "name": "Sabores Ruiz Recetario",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/recipe/192/192",
-      "type": "image/png",
+      "src": "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=192&h=192",
+      "type": "image/jpeg",
       "sizes": "192x192"
     },
     {
-      "src": "https://picsum.photos/seed/recipe/512/512",
-      "type": "image/png",
+      "src": "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=512&h=512",
+      "type": "image/jpeg",
       "sizes": "512x512"
     }
   ],
