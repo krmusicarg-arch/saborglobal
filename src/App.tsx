@@ -450,7 +450,7 @@ export default function App() {
                       name="observations" 
                       rows={3}
                       defaultValue={editingRecipe?.observations}
-                      placeholder="Comentarios personales..."
+                      placeholder="Comentarios sobre la receta ..."
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
                     />
                   </div>
