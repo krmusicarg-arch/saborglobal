@@ -14,7 +14,8 @@ import {
   Save,
   RefreshCw,
   ChefHat,
-  Download
+  Download,
+  Share
 } from 'lucide-react';
 import { db, Recipe } from './db/localDb';
 import { recipeService } from './recipeService';
@@ -34,9 +35,19 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'rating' | 'title'>('rating');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isIos, setIsIos] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showIosInstallModal, setShowIosInstallModal] = useState(false);
 
   useEffect(() => {
+    // Detect iOS
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIos(ios);
+
+    // Detect standalone mode
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    setIsStandalone(standalone);
+
     const handler = (e: any) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
@@ -48,6 +59,12 @@ export default function App() {
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  const handleInstallClick = () => {
+    if (isIos) {
+      setShowIosInstallModal(true);
+      return;
+    }
 
   const handleInstallClick = () => {
     if (!installPrompt) return;
@@ -121,7 +138,8 @@ export default function App() {
   };
 
   const handleDelete = async (id: number) => {
-    await recipeService.delete(id);
+    await rec/* Show install button if installable (Android/Desktop) OR if iOS and not installed */}
+            {(installPrompt || (isIos && !isStandalone))lete(id);
     await loadRecipes();
   };
 
@@ -281,7 +299,44 @@ export default function App() {
               <ChefHat size={48} />
             </div>
             <p className="text-stone-500 font-medium">No se encontraron recetas. ¡Crea la primera!</p>
+         showIosInstallModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowIosInstallModal(false)}
+              className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="relative w-full max-w-sm mx-auto bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden p-6 pb-12 sm:pb-6"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-stone-800">Instalar en iPhone</h3>
+                <button onClick={() => setShowIosInstallModal(false)} className="p-2 hover:bg-stone-100 rounded-full">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="space-y-4 text-stone-600">
+                <p>Para instalar esta aplicación en tu dispositivo iOS:</p>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">1</span>
+                  <span>Toca el botón <span className="font-semibold">Compartir</span> <Share className="inline w-4 h-4 ml-1" /></span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center w-8 h-8 bg-stone-100 rounded-full font-bold text-stone-900">2</span>
+                  <span>Desliza y selecciona <span className="font-semibold">Agregar a Inicio</span> <Plus className="inline w-4 h-4 border border-stone-800 rounded-[3px] ml-1 p-[1px]" /></span>
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-stone-200 rounded-full sm:hidden"></div>
+            </motion.div>
           </div>
+        )}
+
+        { </div>
         )}
       </main>
 
