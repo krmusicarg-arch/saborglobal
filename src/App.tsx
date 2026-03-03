@@ -103,14 +103,14 @@ export default function App() {
   }, []);
 
   const origins = useMemo(() => {
-    const set = new Set(recipes.map(r => r.origin));
+    const set = new Set(recipes.map(r => r.origin?.trim()).filter(Boolean));
     return Array.from(set).sort();
   }, [recipes]);
 
   const filteredRecipes = useMemo(() => {
     return recipes
       .filter(r => {
-        const matchesOrigin = filterOrigin ? r.origin === filterOrigin : true;
+        const matchesOrigin = filterOrigin ? r.origin?.trim() === filterOrigin : true;
         const searchTerms = searchQuery.toLowerCase().split(' ').filter(t => t.length > 0);
         const matchesSearch = searchTerms.every(term => 
           r.title.toLowerCase().includes(term) || 
@@ -136,11 +136,11 @@ export default function App() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const recipeData = {
-      title: formData.get('title') as string,
-      origin: formData.get('origin') as string,
-      link: formData.get('link') as string,
+      title: (formData.get('title') as string).trim(),
+      origin: (formData.get('origin') as string).trim(),
+      link: (formData.get('link') as string).trim(),
       rating: Number(formData.get('rating')),
-      observations: formData.get('observations') as string,
+      observations: (formData.get('observations') as string).trim(),
       content: formData.get('content') as string,
       id: editingRecipe?.id
     };
