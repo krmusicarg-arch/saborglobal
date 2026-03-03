@@ -90,6 +90,27 @@ export default function App() {
     setShowInstallModal(true);
   };
 
+  const handleShareApp = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Sabores Ruiz',
+          text: '¡Descubre y guarda tus recetas favoritas en Sabores Ruiz!',
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Enlace copiado al portapapeles');
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
+
   const loadRecipes = async () => {
     const data = await recipeService.getAll();
     setRecipes(data);
@@ -232,6 +253,13 @@ export default function App() {
                 <Download size={20} />
               </button>
             )}
+            <button 
+              onClick={handleShareApp}
+              className="p-2 rounded-full hover:bg-stone-100 transition-colors text-emerald-600"
+              title="Compartir aplicación"
+            >
+              <Share size={20} />
+            </button>
             <button 
               onClick={handleSync}
               disabled={isSyncing}
