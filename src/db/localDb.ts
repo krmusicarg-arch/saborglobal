@@ -6,6 +6,7 @@ export interface Recipe {
   title: string;
   origin: string;
   link: string;
+  photo?: string;
   rating: number;
   observations: string;
   content?: string;
@@ -20,6 +21,9 @@ export class MyDatabase extends Dexie {
   constructor() {
     super('SaborGlobalDB');
     this.version(1).stores({
+      recipes: '++id, remoteId, origin, rating, synced, deleted'
+    });
+    this.version(2).stores({
       recipes: '++id, remoteId, origin, rating, synced, deleted'
     });
   }

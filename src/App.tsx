@@ -17,7 +17,8 @@ import {
   Download,
   Share,
   MessageCircle,
-  Send
+  Send,
+  Camera
 } from 'lucide-react';
 import { db, Recipe } from './db/localDb';
 import { recipeService } from './recipeService';
@@ -27,6 +28,39 @@ import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+async function fileToCompressedDataUrl(file: File): Promise<string> {
+  const originalDataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    reader.readAsDataURL(file);
+  });
+
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('No se pudo procesar la imagen.'));
+    img.src = originalDataUrl;
+  });
+
+  const maxSize = 1280;
+  const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+  const width = Math.round(image.width * scale);
+  const height = Math.round(image.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return originalDataUrl;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', 0.8);
 }
 
 export default function App() {
@@ -41,6 +75,7 @@ export default function App() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState('');
 
   // Chatbot State
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -153,6 +188,37 @@ export default function App() {
     setIsSyncing(false);
   };
 
+  const openNewRecipeModal = () => {
+    setEditingRecipe(null);
+    setPhotoDataUrl('');
+    setIsModalOpen(true);
+  };
+
+  const openEditRecipeModal = (recipe: Recipe) => {
+    setEditingRecipe(recipe);
+    setPhotoDataUrl(recipe.photo || '');
+    setIsModalOpen(true);
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await fileToCompressedDataUrl(file);
+      setPhotoDataUrl(compressed);
+    } catch (error) {
+      console.error(error);
+      alert('No pudimos procesar la foto seleccionada. Intenta de nuevo.');
+    }
+  };
+
+  const closeRecipeModal = () => {
+    setIsModalOpen(false);
+    setEditingRecipe(null);
+    setPhotoDataUrl('');
+  };
+
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -160,6 +226,7 @@ export default function App() {
       title: (formData.get('title') as string).trim(),
       origin: (formData.get('origin') as string).trim(),
       link: (formData.get('link') as string).trim(),
+      photo: photoDataUrl,
       rating: Number(formData.get('rating')),
       observations: (formData.get('observations') as string).trim(),
       content: formData.get('content') as string,
@@ -168,8 +235,7 @@ export default function App() {
 
     await recipeService.save(recipeData as Recipe);
     await loadRecipes();
-    setIsModalOpen(false);
-    setEditingRecipe(null);
+    closeRecipeModal();
   };
 
   const handleDelete = async (id: number) => {
@@ -330,6 +396,13 @@ export default function App() {
                 className="group bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
               >
                 <div className="p-5 space-y-4">
+                  {recipe.photo && (
+                    <img
+                      src={recipe.photo}
+                      alt={`Foto de ${recipe.title}`}
+                      className="w-full h-40 object-cover rounded-2xl"
+                    />
+                  )}
                   <div className="flex justify-between items-start">
                     <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full uppercase tracking-wider">
                       {recipe.origin}
@@ -357,10 +430,7 @@ export default function App() {
                   <div className="pt-4 flex items-center justify-between border-t border-stone-100">
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => {
-                          setEditingRecipe(recipe);
-                          setIsModalOpen(true);
-                        }}
+                        onClick={() => openEditRecipeModal(recipe)}
                         className="p-2 text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                       >
                         <Edit2 size={18} />
@@ -401,10 +471,7 @@ export default function App() {
 
       {/* FAB */}
       <button 
-        onClick={() => {
-          setEditingRecipe(null);
-          setIsModalOpen(true);
-        }}
+        onClick={openNewRecipeModal}
         className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-200 flex items-center justify-center hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all z-40"
       >
         <Plus size={28} />
@@ -538,7 +605,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
+              onClick={closeRecipeModal}
               className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
             />
             <motion.div 
@@ -552,7 +619,7 @@ export default function App() {
                   <h2 className="text-2xl font-bold text-stone-800">
                     {editingRecipe ? 'Editar Receta' : 'Nueva Receta'}
                   </h2>
-                  <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+                  <button onClick={closeRecipeModal} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
                     <X size={24} />
                   </button>
                 </div>
@@ -601,6 +668,37 @@ export default function App() {
                       placeholder="https://ejemplo.com/receta"
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-stone-600 ml-1">Foto del plato</label>
+                    <label className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl text-stone-600 cursor-pointer hover:border-emerald-400 transition-all">
+                      <Camera size={18} />
+                      <span className="text-sm">Tomar foto o elegir imagen</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                    {photoDataUrl && (
+                      <div className="space-y-2">
+                        <img
+                          src={photoDataUrl}
+                          alt="Vista previa de la foto"
+                          className="w-full h-44 object-cover rounded-2xl border border-stone-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPhotoDataUrl('')}
+                          className="text-sm text-rose-600 hover:text-rose-700 font-medium"
+                        >
+                          Quitar foto
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
